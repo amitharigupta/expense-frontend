@@ -1,33 +1,70 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import Header from './components/Header';
+import Footer from './components/Footer';
+import Dashboard from './components/Dashboard';
+import Login from './components/Login';
+import Register from './components/Register';
+import PasswordReset from './components/PasswordReset';
+import ForgotPassword from './components/ForgotPassword';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import Toast, { Toaster } from 'react-hot-toast';
+import React, { useEffect, useContext, useState } from 'react'
+import { LoginContext } from "./components/ContextProvider/Context";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [data, setData] = useState(false);
+  const history = useNavigate();
+  const { loginData, setLoginData } = useContext(LoginContext);
+  const dashboardValid = async () => {
+    let token = localStorage.getItem('token');
+    const response = await fetch(`https://lemon-carpenter-pevmg.ineuron.app:5000` + '/users/validuser', {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    let data = await response.json();
+    if (data.status === 401) {
+      history("/login");
+      Toast.error("Not a valid user");
+    } else {
+      // Toast.success(data.message);
+      setLoginData(data.data);
+      history("/dashboard");
+    }
+  }
+
+  useEffect(() => {
+    setTimeout(() => {
+      dashboardValid();
+      setData(true);
+    }, 2000)
+  }, [])
 
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
+    <>
+      {
+        data ?
+          <div className="App">
+            <Header />
+            <Routes>
+              <Route path='/dashboard' element={<Dashboard />} />
+              <Route path='/login' element={<Login />} />
+              <Route path='/register' element={<Register />} />
+              <Route path='/password-reset' element={<PasswordReset />} />
+              <Route path='/forgot-password/:id' element={<ForgotPassword />} />
+            </Routes>
+            <Toaster />
+            <Footer />
+          </div> :
+          <div className="d-flex justify-content-center">
+            <div className="spinner-border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+      }
+    </>
   )
 }
 
